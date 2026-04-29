@@ -20,26 +20,32 @@ jobs:
     if: github.actor != 'dependabot[bot]'
 
     steps:
-      - name: Checkout (with previous commit for diff)
+      - name: Checkout caller repo (for the diff)
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      
+
+      - name: Checkout diffbot scripts
+        uses: actions/checkout@v4
+        with:
+          repository: spicypapr1ka/diffbot
+          ref: v1
+          path: .diffbot
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: npm
-        
-      
-      - name: Install dependencies
+
+      - name: Install diffbot dependencies
         run: npm ci
-      
+        working-directory: .diffbot
+
       - name: Summarize & post to Discord
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           COMMIT_SHA: ${{ github.sha }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-        run: node scripts/summarize.mjs
+        run: node .diffbot/scripts/summarize.mjs
         continue-on-error: true
