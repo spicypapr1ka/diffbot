@@ -1,0 +1,45 @@
+name: Summarize Commit
+
+on:
+  push:
+    branches:
+      - main
+  workflow_call:
+    secrets:
+      ANTHROPIC_API_KEY:
+        required: true
+      DISCORD_WEBHOOK_URL:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  summarize:
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
+
+    steps:
+      - name: Checkout (with previous commit for diff)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+        
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Summarize & post to Discord
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          COMMIT_SHA: ${{ github.sha }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: node scripts/summarize.mjs
+        continue-on-error: true
